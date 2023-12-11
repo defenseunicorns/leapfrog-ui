@@ -2,12 +2,17 @@ import type { RequestEvent } from '@sveltejs/kit';
 import OpenAI from 'openai';
 import {env} from "$env/dynamic/private";
 
+let openai = undefined;
+
 /** @type {import('./$types').RequestHandler} */
 export async function GET(event: RequestEvent) {
-    const openai = new OpenAI({
-        apiKey: env.OPENAI_API_KEY,
-        baseURL: env.OPENAI_API_HOST
-    });
+    // This loads the openai client at runtime to prevent a compile time dependency on the environment variables
+    if (openai === undefined) {
+        openai = new OpenAI({
+            apiKey: env.OPENAI_API_KEY,
+            baseURL: env.OPENAI_API_HOST
+        });
+    }
 
     try {
         // Make a request to OpenAI's model API
