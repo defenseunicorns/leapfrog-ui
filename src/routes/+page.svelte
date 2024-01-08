@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { Heading, Input, Label, Indicator } from "flowbite-svelte";
+    import { Heading, Input, Label } from "flowbite-svelte";
     import {
         AnnotationOutline,
         ArrowRightSolid,
@@ -9,12 +9,7 @@
         FileExportOutline,
         PlusOutline,
         RotateOutline,
-        SunOutline,
-        SunSolid,
         TrashBinOutline,
-        UserEditOutline,
-        UserEditSolid,
-        UserSettingsSolid,
     } from "flowbite-svelte-icons";
     import { onMount } from "svelte";
     import { writable } from "svelte/store";
@@ -24,6 +19,9 @@
     import codeblock from "$lib/components/codeblock.svelte";
     import codespan from "$lib/components/codespan.svelte";
     import { v4 as uuidv4 } from "uuid";
+    import ThemeSwitcher from "$lib/components/theme-switcher.svelte";
+    import Indicator from "$lib/components/indicator.svelte";
+
 
     /** @type {import('./$types').LayoutData} */
     export let data;
@@ -31,8 +29,8 @@
     let localStorage;
     let conversations = writable([]);
     let personas = writable([]);
-    let models = writable([]);
-    let loading = writable(true);
+    let models = writable([null]);
+    let modelready = false;
     let showSettings = false;
     let fileInput;
     let fileInputRag;
@@ -52,13 +50,10 @@
     }
 
     onMount(async () => {
-        loading.set(true);
         // required to access localStorage after mount
         localStorage = window.localStorage;
         getLocalConversations();
-
         models.set(await getModels());
-        loading.set(false);
         await updateRagEndpointState();
     });
 
@@ -76,6 +71,7 @@
     async function getModels() {
         const response = await fetch(urlConcat("/api/models"));
         const models = await response.json();
+        modelready = models.length > 0;
         return models;
     }
 
@@ -426,11 +422,6 @@
         });
         editingConversationIndex = -1;
     }
-
-    function toggleTheme() {
-        console.log("We toggled it");
-        data.theme === "dark" ? (data.theme = "light") : (data.theme = "dark");
-    }
 </script>
 
 <div class="flex flex-col h-screen {data.theme}">
@@ -441,13 +432,7 @@
         <div class="flex items-center">
             <img src="leapfrogai.png" alt="LeapfrogAI" class="w-40" />
         </div>
-        <label class="swap swap-rotate" on:change={toggleTheme}>
-            <!-- this hidden checkbox controls the state -->
-            <input type="checkbox" class="invisible" />
-
-            <SunSolid class="swap-on" />
-            <SunOutline class="swap-off" />
-        </label>
+        <ThemeSwitcher />
     </div>
     <div class="flex flex-grow">
         <!-- Side Panel 1 -->
@@ -618,13 +603,7 @@
                     <button on:click={sendMessage} class="btn ml-2 p-2"
                         ><ArrowRightSolid /></button
                     >
-                    <span class="flex items-center ml-2">
-                        {#if !$loading}
-                            <Indicator color="green" size="sm" />
-                        {:else}
-                            <Indicator color="red" size="sm" />
-                        {/if}
-                    </span>
+                    <Indicator active={modelready}/>
                 </div>
             </div>
         </div>
